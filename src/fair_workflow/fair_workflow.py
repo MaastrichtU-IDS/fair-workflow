@@ -25,7 +25,6 @@ def extract_functions(source_code):
     for node in ast.walk(parsed_code):
         if isinstance(node, ast.FunctionDef):
             func_meta["name"] = node.name
-            print(node.name)
             func_meta["args"] = ([arg.arg for arg in node.args.args],)
             func_meta["returns"] = [child.value.id for child in ast.walk(node) if isinstance(child, ast.Return)]
 
@@ -83,7 +82,6 @@ def extract_functions(source_code):
 
                     func_meta["func_calls"].append({"name": function_name, "args": args, "returns": assigned_vars})
 
-    print(func_meta)
     return func_meta
 
 

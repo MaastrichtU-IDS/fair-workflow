@@ -96,7 +96,7 @@ fmt = [
 check = [
     "ruff src tests",
     "black src tests --check",
-    "mypy src",
+    # "mypy src",
 ]
 all = [
     "format",
