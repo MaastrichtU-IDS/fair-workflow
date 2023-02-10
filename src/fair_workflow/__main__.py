@@ -1,7 +1,6 @@
 import typer
 
 from fair_workflow import __version__
-from fair_workflow.fair_workflow import Api
 
 cli = typer.Typer()
 

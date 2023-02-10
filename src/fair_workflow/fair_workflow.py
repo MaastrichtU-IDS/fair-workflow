@@ -1,14 +1,15 @@
+import ast
 import functools
-import ast, inspect
+import inspect
 
 import matplotlib.pyplot as plt
 import networkx as nx
 import rdflib
-from rdflib import Namespace, URIRef, Literal, RDF, RDFS, Graph
 from git import Repo
+from rdflib import RDF, RDFS, Graph, Literal, URIRef
 from yaml import dump
 
-from fair_workflow.namespaces import PPLAN, NP, PWO, DUL
+from fair_workflow.namespaces import DUL, NP, PPLAN, PWO
 
 
 def extract_functions(source_code):
@@ -25,7 +26,7 @@ def extract_functions(source_code):
         if isinstance(node, ast.FunctionDef):
             func_meta["name"] = node.name
             print(node.name)
-            func_meta["args"] = [arg.arg for arg in node.args.args],
+            func_meta["args"] = ([arg.arg for arg in node.args.args],)
             func_meta["returns"] = [child.value.id for child in ast.walk(node) if isinstance(child, ast.Return)]
 
         if isinstance(node, ast.Assign):
@@ -80,11 +81,7 @@ def extract_functions(source_code):
                     #     else:
                     #         print(arg.id)
 
-                    func_meta["func_calls"].append({
-                        'name': function_name,
-                        'args': args,
-                        'returns': assigned_vars
-                    })
+                    func_meta["func_calls"].append({"name": function_name, "args": args, "returns": assigned_vars})
 
     print(func_meta)
     return func_meta
@@ -102,7 +99,7 @@ def generate_rdf_triples(func_meta, namespace=NP):
     g.add((namespace[func_meta["name"]], RDFS.label, Literal(func_meta["name"])))
 
     try:
-        repo = Repo('.')
+        repo = Repo(".")
         git_url = repo.remotes.origin.url
     except:
         git_url = input("No URL to a remote git repository found, provide it please: ")
@@ -119,14 +116,14 @@ def generate_rdf_triples(func_meta, namespace=NP):
             g.add((precedent_step, DUL.precedes, func_uri))
 
         g.add((func_uri, RDF.type, PPLAN.Step))
-        input_args = data['args']
+        input_args = data["args"]
         if input_args:
             for i, arg in enumerate(input_args):
                 arg_uri = namespace[f"{arg}"]
                 g.add((arg_uri, RDF.type, PPLAN.Variable))
                 g.add((func_uri, PPLAN.hasInputVar, arg_uri))
                 g.add((arg_uri, RDF.value, Literal(arg)))
-        assigned_vars = data['returns']
+        assigned_vars = data["returns"]
         if assigned_vars:
             for i, var in enumerate(assigned_vars):
                 var_uri = namespace[f"{var}"]
@@ -139,34 +136,40 @@ def generate_rdf_triples(func_meta, namespace=NP):
 
 def generate_visualization(g):
     """Generate networkx visualization from RDFLib Graph"""
-    G = nx.DiGraph()
+    dg = nx.DiGraph()
 
-    for subject, predicate, object in g:
+    for subject, predicate, obj in g:
         subject = str(subject).replace("http://purl.org/nanopub/temp/np/", "")
         # predicate = str(predicate).replace("http://purl.org/nanopub/temp/np/", "")
-        object = str(object).replace("http://purl.org/nanopub/temp/np/", "")
-        if str(predicate) == "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" and str(object) == "http://purl.org/net/p-plan#Step":
+        obj = str(obj).replace("http://purl.org/nanopub/temp/np/", "")
+        if (
+            str(predicate) == "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
+            and str(obj) == "http://purl.org/net/p-plan#Step"
+        ):
             # step_node = pydot.Node(subject, shape="box")
             # graph.add_node(step_node)
-            G.add_node(subject, size=100)
+            dg.add_node(subject, size=100)
             # nx.draw_networkx_nodes(G, pos, node_size=600, node_color='w', alpha=0.4, node_shape='d')
-        if str(predicate) == "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" and str(object) == "http://purl.org/net/p-plan#Variable":
-            G.add_node(subject, size=1)
+        if (
+            str(predicate) == "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
+            and str(obj) == "http://purl.org/net/p-plan#Variable"
+        ):
+            dg.add_node(subject, size=1)
 
         elif str(predicate) == "http://purl.org/net/p-plan#hasInputVar":
             # input_var_node = pydot.Node(object, shape="ellipse")
             # graph.add_node(input_var_node)
-            G.add_edge(subject, object)
+            dg.add_edge(subject, obj)
         elif str(predicate) == "http://purl.org/net/p-plan#isOutputVarOf":
             # output_var_node = pydot.Node(object, shape="ellipse")
             # graph.add_node(output_var_node)
             # graph.add_edge(pydot.Edge(subject, output_var_node))
-            G.add_edge(subject, object)
+            dg.add_edge(subject, obj)
 
     # Plot Networkx instance of RDF Graph
-    pos = nx.spring_layout(G)
-    nx.draw(G, pos, node_color='skyblue', edge_color='gray', with_labels=True)
-        # plt.show()
+    pos = nx.spring_layout(dg)
+    nx.draw(dg, pos, node_color="skyblue", edge_color="gray", with_labels=True)
+    # plt.show()
     return plt
 
     # pos = nx.spring_layout(G, scale=2)
@@ -203,10 +206,9 @@ def generate_cwl(g):
 def fair_workflow(
     label: str,
 ):
-    """ A decorator to indicate a function is a fair workflow
-    """
-    def decorator(func):
+    """A decorator to indicate a function is a fair workflow"""
 
+    def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **qwargs):
             return func(*args, **qwargs)
@@ -218,4 +220,5 @@ def fair_workflow(
         wrapper._fair_workflow_cwl = generate_cwl(g)
 
         return wrapper
+
     return decorator
