@@ -59,16 +59,16 @@ def save_model(model, path, sample_data, scores, hyper_params):
 def training_workflow(n_jobs: int):
     hyper_params = {"n_jobs": n_jobs, "random_state": 42}
 
-    data, y = load_data()
+    x, y = load_data()
 
-    model = fit_classifier(hyper_params=hyper_params, data=data, y=y)
+    model = fit_classifier(hyper_params=hyper_params, data=x, y=y)
 
     scores = evaluate(model=model)
 
     loaded_model = save_model(
         models=model,
         path="models/iris_example",
-        sample_data=data,
+        sample_data=x,
         scores=scores,
         hyper_params=hyper_params,
     )

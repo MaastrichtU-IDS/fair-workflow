@@ -44,8 +44,8 @@ def extract_functions(source_code):
                     assigned_vars = [child.id]
                 if isinstance(child, ast.Tuple):
                     assigned_vars = []
-                    for tuple_value in child.dims:
-                        assigned_vars.append(tuple_value.id)
+                    # for tuple_value in child.dims:
+                    #        assigned_vars.append(tuple_value.id)
                 if isinstance(child, ast.Call):
                     function_name = child.func.id
 
@@ -116,15 +116,18 @@ def generate_rdf_triples(func_meta, namespace=NP):
         g.add((func_uri, RDF.type, PPLAN.Step))
         input_args = data["args"]
         if input_args:
-            for i, arg in enumerate(input_args):
-                arg_uri = namespace[f"{arg}"]
+            for i, arg in enumerate(input_args.items()):
+                name = arg[0]
+                value = arg[1]
+                arg_uri = func_uri + "_" + name
                 g.add((arg_uri, RDF.type, PPLAN.Variable))
                 g.add((func_uri, PPLAN.hasInputVar, arg_uri))
-                g.add((arg_uri, RDF.value, Literal(arg)))
+                g.add((arg_uri, RDF.value, Literal(value)))
+                g.add((arg_uri, RDFS.label, Literal(name)))
         assigned_vars = data["returns"]
         if assigned_vars:
             for i, var in enumerate(assigned_vars):
-                var_uri = namespace[f"{var}"]
+                var_uri = func_uri + "_" + var
                 g.add((var_uri, rdflib.RDF.type, PPLAN.Variable))
                 g.add((func_uri, PPLAN.isOutputVarOf, var_uri))
                 g.add((var_uri, rdflib.RDF.value, Literal(var)))
@@ -201,6 +204,52 @@ def generate_cwl(g):
     return dump(cwl)
 
 
+def generate_nexflow(g):
+    """Generate Nextflow workflow from RDFLib Graph"""
+    steps = {}
+
+    var_dict = {}
+    for s, p, o in g.triples((None, RDF["value"], None)):
+        var = str(s).split("/")[-1]
+        val = str(o).split("/")[-1]
+        var_dict[var] = val
+    print(var_dict)
+
+    for s, p, o in g.triples((None, PPLAN["isOutputVarOf"], None)):
+        step = str(s).split("/")[-1]
+        var = str(o).split("/")[-1]
+        if step not in steps:
+            steps[step] = []
+        steps[step].append(var)
+
+    deps = {}
+    for s, p, o in g.triples((None, DUL["precedes"], None)):
+        step1 = str(s).split("/")[-1]
+        step2 = str(o).split("/")[-1]
+        if step2 not in deps:
+            deps[step2] = []
+        deps[step2].append(step1)
+
+    # generate the Netflow description
+    netflow_desc = ""
+    for step in steps:
+        netflow_desc += f"process {step} {{\n"
+        netflow_desc += "  input:\n"
+        for var in steps[step]:
+            netflow_desc += f" file {var} from {var_dict[var]} \n"
+        netflow_desc += "  output:\n"
+        netflow_desc += f"    {var}: File\n"
+        netflow_desc += "  script: ...\n"
+        netflow_desc += "}}\n"
+
+    for step1 in deps:
+        for step2 in deps[step1]:
+            netflow_desc += f"{step1} -> {step2}\n"
+
+    print(netflow_desc)
+    return netflow_desc
+
+
 def fair_workflow(
     label: str,
 ):
@@ -215,7 +264,7 @@ def fair_workflow(
         g = generate_rdf_triples(funcs)
         wrapper._fair_workflow = g
         wrapper._fair_workflow_visualization = generate_visualization(g)
-        wrapper._fair_workflow_cwl = generate_cwl(g)
+        wrapper._fair_workflow_cwl = generate_nexflow(g)
 
         return wrapper
 
