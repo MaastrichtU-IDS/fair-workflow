@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - orcid: https://orcid.org/0000-0002-1501-1082
+    email: vincent.emonet@gmail.com
+    given-names: Vincent Emonet
+    affiliation: Institute of Data Science, Maastricht University
+  - orcid: https://orcid.org/0000-0001-7769-4272
+    email: remzi.celebi@maastrichtuniversity.nl
+    given-names: Remzi Çelebi
+    affiliation: Institute of Data Science, Maastricht University
+title: "FAIR workflow"
+repository-code: https://github.com/MaastrichtU-IDS/fair-workflow
+date-released: 2023-02-10
+url: https://pypi.org/project/fair-workflow
+# doi: 10.48550/arXiv.2206.13787
