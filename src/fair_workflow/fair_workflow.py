@@ -231,23 +231,23 @@ def generate_nexflow(g):
         deps[step2].append(step1)
 
     # generate the Netflow description
-    netflow_desc = ""
+    nextflow_desc = ""
     for step in steps:
-        netflow_desc += f"process {step} {{\n"
-        netflow_desc += "  input:\n"
+        nextflow_desc += f"process {step} {{\n"
+        nextflow_desc += "  input:\n"
         for var in steps[step]:
-            netflow_desc += f" file {var} from {var_dict[var]} \n"
-        netflow_desc += "  output:\n"
-        netflow_desc += f"    {var}: File\n"
-        netflow_desc += "  script: ...\n"
-        netflow_desc += "}}\n"
+            nextflow_desc += f"    file {var} from {var_dict[var]} \n"
+        nextflow_desc += "  output:\n"
+        nextflow_desc += f"    {var}: File\n"
+        nextflow_desc += "  script: ...\n"
+        nextflow_desc += "}}\n"
 
     for step1 in deps:
         for step2 in deps[step1]:
-            netflow_desc += f"{step1} -> {step2}\n"
+            nextflow_desc += f"{step1} -> {step2}\n"
 
-    print(netflow_desc)
-    return netflow_desc
+    print(nextflow_desc)
+    return nextflow_desc
 
 
 def fair_workflow(

@@ -1,21 +1,7 @@
-import logging
-
 from sklearn.datasets import load_iris
 from sklearn.ensemble import RandomForestClassifier
 
-from fair_workflow import fair_workflow
-
-# Script to use to try the package in development
-
-# Setup logger
-log = logging.getLogger()
-log.setLevel(logging.INFO)
-console_handler = logging.StreamHandler()
-formatter = logging.Formatter("%(asctime)s %(levelname)s: [%(module)s:%(funcName)s] %(message)s")
-console_handler.setFormatter(formatter)
-log.addHandler(console_handler)
-
-# Add code to test the lib in development
+from fair_workflow import fair_workflow, generate_visualization
 
 
 def load_data():
@@ -45,6 +31,7 @@ def evaluate(model):
     }
 
 
+# @fair_step
 def save_model(model, path, sample_data, scores, hyper_params):
     return {
         "model": model,
@@ -76,7 +63,8 @@ def training_workflow(n_jobs: int):
 
 
 if __name__ == "__main__":
+    training_workflow._fair_workflow.serialize(format="turtle")
     print(training_workflow._fair_workflow.serialize(format="turtle"))
-    # generate_visualization(training_workflow._fair_workflow).show()
+    generate_visualization(training_workflow._fair_workflow).show()
 
-    # model = training_workflow(2)
+    # model = training_workflow(n_jobs=2)
